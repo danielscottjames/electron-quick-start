@@ -7,6 +7,8 @@ const BrowserWindow = electron.BrowserWindow
 const path = require('path')
 const url = require('url')
 
+const { fork } = require('child_process')
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
@@ -21,6 +23,16 @@ function createWindow () {
     protocol: 'file:',
     slashes: true
   }))
+
+  mainWindow.webContents.once('did-finish-load', () => {
+    fork(`${__dirname}/child.js`, [], {
+      silent: true,
+      execArgv: ['--expose-gc']
+    }).stdout.on('data', (data) => {
+      console.log(data.toString());
+      mainWindow.webContents.send('data', data.toString());
+    });
+  });
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
